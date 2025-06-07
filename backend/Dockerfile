@@ -5,8 +5,6 @@ ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
 
 
-# Install dependencies
-
 ADD . /app
 
 WORKDIR /app
