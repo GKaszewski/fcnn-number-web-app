@@ -6,6 +6,7 @@ import { SwitchCamera } from "lucide-react";
 export default function DigitRecognizer() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const [prediction, setPrediction] = useState<number | null>(null);
@@ -39,11 +40,22 @@ export default function DigitRecognizer() {
     const interval = setInterval(() => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      if (!video || !canvas) return;
+      const overlay = overlayRef.current;
+
+      if (!video || !canvas || !overlay) return;
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      ctx.drawImage(video, 0, 0, 28, 28);
+      const vRect = video.getBoundingClientRect();
+      const oRect = overlay.getBoundingClientRect();
+      const scaleX = video.videoWidth / vRect.width;
+      const scaleY = video.videoHeight / vRect.height;
+      const sx = (oRect.left - vRect.left) * scaleX;
+      const sy = (oRect.top - vRect.top) * scaleY;
+      const sw = oRect.width * scaleX;
+      const sh = oRect.height * scaleY;
+
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 28, 28);
       canvas.toBlob((blob) => {
         if (!blob) return;
         const data = new FormData();
@@ -102,6 +114,12 @@ export default function DigitRecognizer() {
               <SwitchCamera />
             </Button>
           </div>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div
+              ref={overlayRef}
+              className="border-4 border-white/50 w-[200px] h-[200px]"
+            />
+          </div>
           <div className="absolute bottom-8 bg-white/10 backdrop-blur-2xl p-4 rounded-2xl text-center">
             <p className="text-xl font-bold text-green-500">
               Digit: {prediction ?? "..."}
@@ -116,7 +134,12 @@ export default function DigitRecognizer() {
         </>
       )}
 
-      <canvas ref={canvasRef} width={28} height={28} className="hidden" />
+      <canvas
+        ref={canvasRef}
+        width={28}
+        height={28}
+        className="z-10 absolute bottom-10 left-10 hidden"
+      />
     </div>
   );
 }
